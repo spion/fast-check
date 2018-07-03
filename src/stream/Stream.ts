@@ -1,12 +1,30 @@
+function* flatMapHelper<T, U>(g: IterableIterator<T>, f: (t: T) => IterableIterator<U>): IterableIterator<U> {
+  for (const v of g) {
+    yield* f(v);
+  }
+}
+
+function* joinHelper<T>(first: IterableIterator<T>, other: IterableIterator<T>): IterableIterator<T> {
+  yield* first;
+  yield* other;
+}
+
+function* mapHelper<T, U>(g: IterableIterator<T>, f: (t: T) => U): IterableIterator<U> {
+  for (const v of g) {
+    yield f(v);
+  }
+}
+
+function* nilHelper<T>(): IterableIterator<T> {
+  // nil has no value
+}
+
 export default class Stream<T> implements IterableIterator<T> {
   /**
    * Create an empty stream of T
    */
   static nil<T>() {
-    function* g(): IterableIterator<T> {
-      // nil has no value
-    }
-    return new Stream<T>(g());
+    return new Stream<T>(nilHelper<T>());
   }
 
   // /*DEBUG*/ // no double iteration
@@ -41,10 +59,7 @@ export default class Stream<T> implements IterableIterator<T> {
    * @param f Mapper function
    */
   map<U>(f: (v: T) => U): Stream<U> {
-    function* helper(v: T): IterableIterator<U> {
-      yield f(v);
-    }
-    return this.flatMap(helper);
+    return new Stream(mapHelper(this.g, f));
   }
   /**
    * Flat map all elements of the Stream using `f`
@@ -55,12 +70,8 @@ export default class Stream<T> implements IterableIterator<T> {
    */
   flatMap<U>(f: (v: T) => IterableIterator<U>): Stream<U> {
     // /*DEBUG*/ this.closeCurrentStream();
-    function* helper(g: IterableIterator<T>): IterableIterator<U> {
-      for (const v of g) {
-        yield* f(v);
-      }
-    }
-    return new Stream(helper(this.g));
+
+    return new Stream(flatMapHelper(this.g, f));
   }
 
   /**
@@ -183,14 +194,8 @@ export default class Stream<T> implements IterableIterator<T> {
    *
    * @param others Streams to join to the current Stream
    */
-  join(...others: IterableIterator<T>[]): Stream<T> {
-    function* helper(c: Stream<T>): IterableIterator<T> {
-      yield* c;
-      for (const s of others) {
-        yield* s;
-      }
-    }
-    return new Stream<T>(helper(this));
+  join(other: IterableIterator<T>): Stream<T> {
+    return new Stream<T>(joinHelper(this.g, other));
   }
 
   /**

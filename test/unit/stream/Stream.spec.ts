@@ -214,13 +214,6 @@ describe('Stream', () => {
     });
   });
   describe('join', () => {
-    it('Should be able to join nothing', () => {
-      function* g() {
-        yield* [1, 2, 3, 4, 5];
-      }
-      let s = stream(g()).join();
-      assert.deepEqual([...s], [1, 2, 3, 4, 5]);
-    });
     it('Should be able to join another iterable', () => {
       function* g1() {
         yield* [1, 2, 3, 4, 5];
@@ -230,28 +223,6 @@ describe('Stream', () => {
       }
       let s = stream(g1()).join(g2());
       assert.deepEqual([...s], [1, 2, 3, 4, 5, 8, 9]);
-    });
-    it('Should be able to join multiple other streams', () => {
-      function* g1() {
-        yield* [1, 2, 3, 4, 5];
-      }
-      function* g2() {
-        yield* [8, 9];
-      }
-      let s = stream(g1()).join(g2(), g1());
-      assert.deepEqual([...s], [1, 2, 3, 4, 5, 8, 9, 1, 2, 3, 4, 5]);
-    });
-    it('Should be able to join multiple other streams while mapping the initial stream', () => {
-      function* g1() {
-        yield* [1, 2, 3, 4, 5];
-      }
-      function* g2() {
-        yield* [8, 9];
-      }
-      let s = stream(g1())
-        .map(v => 10 * v)
-        .join(g2(), g1());
-      assert.deepEqual([...s], [10, 20, 30, 40, 50, 8, 9, 1, 2, 3, 4, 5]);
     });
     it('Should be able to join infinite streams', () => {
       function* g1() {

@@ -7,6 +7,19 @@ import { ArbitraryWithShrink } from './definition/ArbitraryWithShrink';
 import { biasWrapper } from './definition/BiasedArbitraryWrapper';
 import Shrinkable from './definition/Shrinkable';
 
+function* shrink_decr(shrunkOnce: boolean, realGap: number, value: number): IterableIterator<number> {
+  const gap = shrunkOnce ? Math.floor(realGap / 2) : realGap;
+  for (let toremove = gap; toremove > 0; toremove = Math.floor(toremove / 2)) {
+    yield value - toremove;
+  }
+}
+function* shrink_incr(shrunkOnce: boolean, realGap: number, value: number): IterableIterator<number> {
+  const gap = shrunkOnce ? Math.ceil(realGap / 2) : realGap;
+  for (let toremove = gap; toremove < 0; toremove = Math.ceil(toremove / 2)) {
+    yield value - toremove;
+  }
+}
+
 /** @hidden */
 class IntegerArbitrary extends ArbitraryWithShrink<number> {
   static MIN_INT: number = 0x80000000 | 0;
@@ -28,19 +41,10 @@ class IntegerArbitrary extends ArbitraryWithShrink<number> {
   }
   private shrink_to(value: number, target: number, shrunkOnce: boolean): Stream<number> {
     const realGap = value - target;
-    function* shrink_decr(): IterableIterator<number> {
-      const gap = shrunkOnce ? Math.floor(realGap / 2) : realGap;
-      for (let toremove = gap; toremove > 0; toremove = Math.floor(toremove / 2)) {
-        yield value - toremove;
-      }
-    }
-    function* shrink_incr(): IterableIterator<number> {
-      const gap = shrunkOnce ? Math.ceil(realGap / 2) : realGap;
-      for (let toremove = gap; toremove < 0; toremove = Math.ceil(toremove / 2)) {
-        yield value - toremove;
-      }
-    }
-    return realGap > 0 ? stream(shrink_decr()) : stream(shrink_incr());
+
+    return realGap > 0
+      ? stream(shrink_decr(shrunkOnce, realGap, value))
+      : stream(shrink_incr(shrunkOnce, realGap, value));
   }
   shrink(value: number, shrunkOnce?: boolean): Stream<number> {
     if (this.min <= 0 && this.max >= 0) {
